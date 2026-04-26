@@ -1,0 +1,141 @@
+openapi: 3.0.3
+info:
+  title: WashSetu MVP API
+  version: 1.0.0
+  description: Core API for smart laundry slot booking and tracking.
+servers:
+  - url: https://api.washsetu.com
+paths:
+  /vendors:
+    get:
+      summary: List nearby vendors
+      parameters:
+        - name: lat
+          in: query
+          schema:
+            type: number
+            format: float
+        - name: lng
+          in: query
+          schema:
+            type: number
+            format: float
+        - name: radiusKm
+          in: query
+          schema:
+            type: number
+            default: 5
+      responses:
+        "200":
+          description: Vendor list
+  /vendors/{vendorId}/slots:
+    get:
+      summary: Get available slots for a vendor/date
+      parameters:
+        - name: vendorId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Slot availability
+  /bookings:
+    post:
+      summary: Create booking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBookingRequest"
+      responses:
+        "201":
+          description: Booking created
+        "409":
+          description: Slot unavailable
+  /bookings/{bookingId}:
+    get:
+      summary: Get booking details
+      parameters:
+        - name: bookingId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Booking detail
+  /bookings/{bookingId}/status:
+    patch:
+      summary: Update booking status (partner/admin)
+      parameters:
+        - name: bookingId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [Booked, PickedUp, Washing, Ready, Delivered]
+              required: [status]
+      responses:
+        "200":
+          description: Status updated
+  /bookings/{bookingId}/review:
+    post:
+      summary: Submit review for completed booking
+      parameters:
+        - name: bookingId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                comment:
+                  type: string
+              required: [rating]
+      responses:
+        "201":
+          description: Review created
+components:
+  schemas:
+    CreateBookingRequest:
+      type: object
+      properties:
+        userId:
+          type: string
+        vendorId:
+          type: string
+        slotId:
+          type: string
+        amount:
+          type: number
+          format: float
+        paymentMethod:
+          type: string
+          enum: [UPI, Card, Wallet, COD]
+      required: [userId, vendorId, slotId, amount, paymentMethod]
